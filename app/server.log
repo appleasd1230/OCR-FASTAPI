@@ -1,0 +1,18 @@
+2023-01-31 10:01:51,165 - main - log_requests - line:102 - INFO - rid=Q4W875 start request path=/rec/demo
+2023-01-31 10:01:51,165 - main - log_requests - line:102 - INFO - rid=Q4W875 start request path=/rec/demo
+2023-01-31 10:01:51,735 - main - log_requests - line:102 - INFO - rid=IRVM80 start request path=/favicon.ico
+2023-01-31 10:01:51,735 - main - log_requests - line:102 - INFO - rid=IRVM80 start request path=/favicon.ico
+2023-01-31 10:01:51,738 - main - log_requests - line:109 - INFO - rid=IRVM80 completed_in=0.00ms status_code=404
+2023-01-31 10:01:51,738 - main - log_requests - line:109 - INFO - rid=IRVM80 completed_in=0.00ms status_code=404
+2023-01-31 10:02:37,876 - main - log_requests - line:102 - INFO - rid=5Z21T4 start request path=/rec/demo
+2023-01-31 10:02:37,876 - main - log_requests - line:102 - INFO - rid=5Z21T4 start request path=/rec/demo
+2023-01-31 10:07:38,766 - main - log_requests - line:102 - INFO - rid=M9D6F5 start request path=/rec/demo
+2023-01-31 10:07:38,766 - main - log_requests - line:102 - INFO - rid=M9D6F5 start request path=/rec/demo
+2023-01-31 10:11:35,730 - main - log_requests - line:102 - INFO - rid=PBWV8P start request path=/rec/demo
+2023-01-31 10:11:35,730 - main - log_requests - line:102 - INFO - rid=PBWV8P start request path=/rec/demo
+2023-01-31 10:11:38,722 - main - log_requests - line:109 - INFO - rid=PBWV8P completed_in=2991.00ms status_code=200
+2023-01-31 10:11:38,722 - main - log_requests - line:109 - INFO - rid=PBWV8P completed_in=2991.00ms status_code=200
+2023-01-31 10:15:10,185 - main - log_requests - line:102 - INFO - rid=JSO2KR start request path=/rec/demo
+2023-01-31 10:15:10,185 - main - log_requests - line:102 - INFO - rid=JSO2KR start request path=/rec/demo
+2023-01-31 10:15:38,457 - main - log_requests - line:109 - INFO - rid=JSO2KR completed_in=28271.25ms status_code=200
+2023-01-31 10:15:38,457 - main - log_requests - line:109 - INFO - rid=JSO2KR completed_in=28271.25ms status_code=200
