@@ -194,6 +194,70 @@ async def rec_result(seq_no: str):
         headers = {"Content-Type": "application/json;charset=UTF-8"}
         return JSONResponse(content=json_compatible_item_data, headers=headers)
 
+@app.get("rec/demo")
+async def rec_demo():
+    class RecResult(BaseModel):
+        Status: int
+        Msg: str
+
+    images = glob.glob('demo/input/*.jpg') # 取得所有需要的照片路徑
+    for img_path in images:
+        file_name = os.path.basename(img_path)
+        # org_img = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), -1)
+        # print(org_img)
+        org_img = sharpen(img_path)
+
+        stream = io.BytesIO(org_img)
+        pil_img = Image.open(stream)
+        
+        if pil_img.mode == '1':
+            pil_img.convert('L')
+            buf = io.BytesIO()
+            pil_img.save(buf, format='JPEG')
+            org_img = buf.getvalue()
+            
+        stream.close()
+
+        org_img = cv2.imdecode(np.frombuffer(org_img, np.uint8), cv2.IMREAD_COLOR)
+        # org_img = cv2.cvtColor(org_img, cv2.COLOR_BGR2GRAY)
+
+        results = {
+            "res": [],
+            "boxes": [],
+            "txts": [],
+            "scores": []
+        }
+        res = ocr.ocr(org_img)
+        for row in res:
+            results['res'].append({
+                'points': [ [int(p[0]), int(p[1])] for p in row[0]],
+                'text': row[1][0],
+                'score': round(float(row[1][1]), 2)
+            })
+        results['boxes'] = sorted_boxes(np.asarray([res[i][0] for i in range(len(res))]))
+        results['txts'] = [res[i][1][0] for i in range(len(res))]
+        results['scores'] = [res[i][1][1] for i in range(len(res))]
+
+        drop_score = 0.5
+        draw_img = draw_ocr_box_txt(
+                    Image.fromarray(org_img),
+                    results['boxes'],
+                    results['txts'],
+                    results['scores'],
+                    drop_score=drop_score,
+                    font_path='doc/fonts/simfang.ttf')
+
+                    
+        cv2.imencode('.jpeg', draw_img)[1].tofile('demo/output/' + file_name)
+
+    response = {
+        "Status" : 0,
+        "Msg" : f"辨識完成"
+    }
+    rec_task = RecResult(**response)
+    json_compatible_item_data = jsonable_encoder(rec_task)
+    headers = {"Content-Type": "application/json;charset=UTF-8"}
+    return JSONResponse(content=json_compatible_item_data, headers=headers)
 
 # IIS 需要轉換將ASGI轉為WSGI
 wsgi_app = ASGIMiddleware(app)
