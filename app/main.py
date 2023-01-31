@@ -7,7 +7,14 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from a2wsgi import ASGIMiddleware
+# from routers import recognize
 from paddleocr import PaddleOCR, draw_ocr
+# from slowapi.errors import RateLimitExceeded
+# from slowapi import Limiter, _rate_limit_exceeded_handler
+# from slowapi.util import get_remote_address
+# from slowapi.middleware import SlowAPIMiddleware
+from modules.demo import *
+
 import cv2
 import string
 import os
@@ -18,9 +25,14 @@ import json
 import numpy as np
 import traceback
 import threading
+# from multiprocessing import Pool
+# import multiprocessing as mp
+# import concurrent
+# import queue
 import time
 import random
 
+# setup loggers
 import logging
 
 logger = logging.getLogger()
@@ -40,6 +52,12 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+# # 實例化一個limiter對象，根據客戶端地址進行速限
+# limiter = Limiter(key_func=get_remote_address)
+# # 指定FastApi的限速器為limiter
+# app.state.limiter = limiter
+# # 指定FastApi的異常攔截器
+# app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 origins = [
     "*",
@@ -53,20 +71,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# app.add_middleware(
+#     SlowAPIMiddleware
+# )
+
+# app.include_router(
+#     recognize.router
+# )
+
 
 app.doc_ocr = PaddleOCR(
-    det_model_dir=r'ml_models/ppocv_server_v2.0/ch_ppocr_server_v2.0_det_infer/',
+    det_model_dir=r'ml_models/ch_PP-OCRv3/ch_PP-OCRv3_det_infer/',
     rec_model_dir=r'ml_models/ppocv_server_v2.0/ch_ppocr_server_v2.0_rec_infer/',
     # det_model_dir=r'app/ml_models/ch_PP-OCRv3/ch_PP-OCRv3_det_infer/',
     # rec_model_dir=r'app/ml_models/ch_PP-OCRv3/ch_PP-OCRv3_rec_infer/',
     rec_char_dict_path=r'dict/cathay_dict.txt',
     cls_model_dir=r'ml_models/ppocr_mobile_v2.0/ch_ppocr_mobile_v2.0_cls_infer/',
     use_gpu=False,
-    det_db_thresh = 0.1,
-    det_db_box_thresh=0.1,
     use_angle_cls=True,
-    use_space_char=True,
     lang="ch",
+    enable_mkldnn=True,
+    ocr_version= "PP-OCRv2",
+    rec_image_shape= "3,32,320",
     cpu_threads=12
 )
 
@@ -92,9 +118,14 @@ def background_task(post_seq_no, img, post_case_type):
 
     loop = asyncio.get_running_loop()
     loop.set_default_executor(ThreadPoolExecutor(max_workers=1))
+    # p = Pool(5)
     time.sleep(random.randint(3, 5))
+    # lock.acquire()
+    # p.apply_async(write_to_file, (post_seq_no, img, post_case_type,))
     write_to_file(post_seq_no, img, post_case_type, app.doc_ocr)
-
+    # p.close()
+    # lock.release()
+    # return
 
 @app.post("/rec/doc")
 # @limiter.limit("5/minute")
@@ -134,13 +165,27 @@ async def add_rec_task(
         raise HTTPException(status_code=200, detail=json_compatible_item_data)
 
     try:
+        # p_job = mp.Process(
+        #     target=write_to_file,
+        #     args=(post_seq_no, img, post_case_type),
+        #     name=f't_{post_seq_no}'
+        # )
+        # p_job.daemon = True
+        # p_job.start()
+        # time.sleep(3)
+
         t_job = threading.Thread(
             target=background_task,
             args=(post_seq_no, img, post_case_type),
             name=f't_{post_seq_no}'
         )
+        # t_job.daemon = True
+        t_job.start()
         time.sleep(3)
-    
+        
+        # background_tasks.add_task(
+        #     run_in_process, post_seq_no, img, post_case_type
+        # )
 
         response = {
             "statusCode" : 0,
@@ -194,7 +239,7 @@ async def rec_result(seq_no: str):
         headers = {"Content-Type": "application/json;charset=UTF-8"}
         return JSONResponse(content=json_compatible_item_data, headers=headers)
 
-@app.get("rec/demo")
+@app.get("/rec/demo")
 async def rec_demo():
     class RecResult(BaseModel):
         Status: int
@@ -227,7 +272,7 @@ async def rec_demo():
             "txts": [],
             "scores": []
         }
-        res = ocr.ocr(org_img)
+        res = app.doc_ocr.ocr(org_img)
         for row in res:
             results['res'].append({
                 'points': [ [int(p[0]), int(p[1])] for p in row[0]],
@@ -245,7 +290,7 @@ async def rec_demo():
                     results['txts'],
                     results['scores'],
                     drop_score=drop_score,
-                    font_path='doc/fonts/simfang.ttf')
+                    font_path='demo/fonts/simfang.ttf')
 
                     
         cv2.imencode('.jpeg', draw_img)[1].tofile('demo/output/' + file_name)
